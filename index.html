@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Password Input estilo Wordle - Modo Oscuro</title>
+    <title>mussyollini</title>
     <style>
         * {
             box-sizing: border-box;
@@ -145,9 +145,6 @@
 
             if (inputValue.length === 7) {
                 const inputHash = await hashPassword(inputValue);
-
-                console.log("Hash ingresado:", inputHash);
-                console.log("Hash correcto:", correctPasswordHash);
 
                 if (inputHash === correctPasswordHash) {
                     successVideo.style.display = "block";
