@@ -2,92 +2,186 @@
 <html lang="es">
 
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>mussyollini</title>
+    <title>Password Input estilo Wordle - Modo Oscuro</title>
     <style>
         * {
-            margin: 0;
-            padding: 0;
             box-sizing: border-box;
         }
 
-        body,
-        html {
-            height: 100%;
-            width: 100%;
+        body {
             font-family: Arial, sans-serif;
-            overflow: hidden;
-            /* Prevent scrolling */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
         }
 
-        .fullscreen-bg {
-            position: relative;
-            height: 100%;
-            width: 100%;
+        .password-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .password-box {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #3a3a3c;
+            font-size: 1.5rem;
+            text-align: center;
+            line-height: 50px;
+            background-color: #1a1a1b;
+            color: #e0e0e0;
+            cursor: pointer;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .password-box.filled {
+            border-color: #787c7e;
+        }
+
+        .password-box.correct {
+            background-color: #6aaa64;
+            color: white;
+            border-color: #6aaa64;
+        }
+
+        .password-box.incorrect {
+            background-color: #c9b458;
+            color: white;
+            border-color: #c9b458;
+        }
+
+        .password-box.wrong {
+            background-color: #787c7e;
+            color: white;
+            border-color: #787c7e;
+        }
+
+        .hidden-input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 1.2rem;
+            display: none;
         }
 
         video {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            /* Ensures video is fully visible within the viewport */
-            transform: translate(-50%, -50%);
-            z-index: -1;
-            background-color: black;
-            /* Fallback for letterbox/pillarbox effect */
+            display: none;
+            margin-top: 20px;
+            width: 80%;
+            max-width: 600px;
         }
 
-        .play-button {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            padding: 20px 40px;
-            font-size: 1.5rem;
-            color: white;
-            background-color: rgba(0, 0, 0, 0.7);
-            border: none;
-            cursor: pointer;
-            z-index: 10;
-        }
-
-        h1 {
-            font-size: 3rem;
-            text-shadow: 2px 2px 4px rgba(5, 6, 6, 1);
-        }
-
-        @media (max-width: 600px) {
-            h1 {
-                font-size: 2rem;
-            }
+        .hidden {
+            opacity: 0;
+            visibility: hidden;
         }
     </style>
 </head>
 
 <body>
-    <div class="fullscreen-bg">
-        <video id="videoElement">
-            <source src="./teaser.mp4" type="video/mp4">
-            Your browser does not support the video tag.
-        </video>
+
+    <div class="password-container" id="password-container">
+        <div class="password-box" id="box-1"></div>
+        <div class="password-box" id="box-2"></div>
+        <div class="password-box" id="box-3"></div>
+        <div class="password-box" id="box-4"></div>
+        <div class="password-box" id="box-5"></div>
+        <div class="password-box" id="box-6"></div>
+        <div class="password-box" id="box-7"></div>
     </div>
 
-    <button class="play-button" onclick="playVideo()">Reproducir vídeo</button>
+    <p class="error-message" id="error-message">Código incorrecto, intenta de nuevo.</p>
+
+    <video id="success-video" controls>
+        <source src="./trailer.mp4" type="video/mp4">
+        Tu navegador no soporta el video.
+    </video>
+
+    <input type="password" id="hidden-input" class="hidden-input" maxlength="7">
 
     <script>
-        function playVideo() {
-            const video = document.getElementById('videoElement');
-            video.play();
-            video.muted = false;
-            video.loop = true;
-            // Ocultar el botón una vez que se ha hecho clic
-            document.querySelector('.play-button').style.display = 'none';
+        const passwordBoxes = document.querySelectorAll('.password-box');
+        const hiddenInput = document.getElementById('hidden-input');
+        const errorMessage = document.getElementById('error-message');
+        const successVideo = document.getElementById('success-video');
+        const passwordContainer = document.getElementById('password-container');
+        const correctPasswordHash = "697fc663f2ddd98c7164fc0c791aaaeff9fe98134872880ce95224b74d07fa95";
+
+        window.onload = function () {
+            hiddenInput.focus();
+        };
+
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hash = await crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
         }
+
+        hiddenInput.addEventListener('input', async function () {
+            const inputValue = hiddenInput.value;
+
+            passwordBoxes.forEach((box, index) => {
+                if (inputValue[index]) {
+                    box.textContent = inputValue[index];
+                    box.classList.add('filled');
+                } else {
+                    box.textContent = "";
+                    box.classList.remove('filled');
+                }
+            });
+
+            if (inputValue.length === 7) {
+                const inputHash = await hashPassword(inputValue);
+
+                console.log("Hash ingresado:", inputHash);
+                console.log("Hash correcto:", correctPasswordHash);
+
+                if (inputHash === correctPasswordHash) {
+                    successVideo.style.display = "block";
+                    successVideo.play();
+                    passwordContainer.classList.add('hidden');
+                    errorMessage.style.display = "none";
+                } else {
+                    errorMessage.style.display = "block";
+                    hiddenInput.value = "";
+                    passwordBoxes.forEach(box => {
+                        box.textContent = "";
+                        box.classList.remove('filled');
+                    });
+                    hiddenInput.focus();
+                }
+            }
+        });
+
+        hiddenInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Backspace') {
+                const inputValue = hiddenInput.value;
+                passwordBoxes[inputValue.length].textContent = "";
+                passwordBoxes[inputValue.length].classList.remove('filled');
+            }
+        });
+
+        passwordBoxes.forEach((box, index) => {
+            box.addEventListener('click', function () {
+                hiddenInput.setSelectionRange(index, index);
+                hiddenInput.focus();
+            });
+        });
     </script>
+
 </body>
 
 </html>
