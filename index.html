@@ -131,7 +131,7 @@
         }
 
         hiddenInput.addEventListener('input', async function () {
-            const inputValue = hiddenInput.value;
+            const inputValue = hiddenInput.value.toUpperCase();;
 
             passwordBoxes.forEach((box, index) => {
                 if (inputValue[index]) {
